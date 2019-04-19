@@ -45,5 +45,12 @@ if (!defined('__CSRF_PROTECTOR_csrfpAction__')) {
          * @var int
          */
         const InternalServerErrorResponseAction = 4;
+
+        /**
+         * Variable: LogOnlyAction
+         * Action of sending back 5XX response code
+         * @var int
+         */
+        const LogOnlyAction = 5;
     }
 }

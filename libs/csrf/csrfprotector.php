@@ -89,7 +89,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
          * Contains list of those parameters that are required to be there
          *     in config file for csrfp to work
          */
-        public static $requiredConfigurations  = array('logDirectory', 'failedAuthAction', 'jsUrl', 'tokenLength');
+        public static $requiredConfigurations  = array('logDirectory', 'failedAuthAction', 'tokenLength');
         
         /*
          *    Function: init
@@ -110,7 +110,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
          *                                            file are not available
          *
          */
-        public static function init($length = null, $action = null, $logger = null)
+        public static function init($configFile = null, $logger = null)
         {
             /*
              * Check if init has already been called.
@@ -139,7 +139,9 @@ if (!defined('__CSRF_PROTECTOR__')) {
             $standard_config_location = __DIR__ ."/../config.php";
             $composer_config_location = __DIR__ ."/../../../../../config/csrf_config.php";
 
-            if (file_exists($standard_config_location)) {
+            if($configFile and file_exists($configFile)) {
+                self::$config = include($configFile);
+            } elseif (file_exists($standard_config_location)) {
                 self::$config = include($standard_config_location);
             } elseif(file_exists($composer_config_location)) {
                 self::$config = include($composer_config_location);
@@ -147,13 +149,6 @@ if (!defined('__CSRF_PROTECTOR__')) {
                 throw new configFileNotFoundException("OWASP CSRFProtector: configuration file not found for CSRFProtector!");
             }
 
-            //overriding length property if passed in parameters
-            if ($length != null)
-                self::$config['tokenLength'] = intval($length);
-            
-            //action that is needed to be taken in case of failed authorisation
-            if ($action != null)
-                self::$config['failedAuthAction'] = $action;
 
             if (self::$config['CSRFP_TOKEN'] == '')
                 self::$config['CSRFP_TOKEN'] = CSRFP_TOKEN;
@@ -187,19 +182,23 @@ if (!defined('__CSRF_PROTECTOR__')) {
                 self::$logger = new csrfpDefaultLogger(self::$config['logDirectory']);
             }
 
-            // Authorise the incoming request
-            self::authorizePost();
+        }
 
-            // Initialize output buffering handler
-            if (!defined('__TESTING_CSRFP__'))
-                ob_start('csrfProtector::ob_handler');
-
-            if (!isset($_COOKIE[self::$config['CSRFP_TOKEN']])
-                || !isset($_SESSION[self::$config['CSRFP_TOKEN']])
-                || !is_array($_SESSION[self::$config['CSRFP_TOKEN']])
-                || !in_array($_COOKIE[self::$config['CSRFP_TOKEN']],
-                    $_SESSION[self::$config['CSRFP_TOKEN']]))
-                self::refreshToken();
+        /*
+         * Function: renderHeaderTokens
+         * function to render the block of code that we must add to the header of each page
+         *
+         * Parameters:
+         * void
+         *
+         * Returns:
+         * string
+         */
+        public static function renderHeaderTokens(){
+            $headerTokens = '<input type="hidden" id="' . CSRFP_FIELD_TOKEN_NAME.'" value="'.self::$config['CSRFP_TOKEN'] .'">' .PHP_EOL;
+            $headerTokens .= '<input type="hidden" id="' .CSRFP_FIELD_URLS .'" value=\''.json_encode(self::$config['verifyGetFor']) .'\'>';
+            $headerTokens .= '<noscript>'.self::$config['disabledJavascriptMessage'].'</noscript>';
+            return $headerTokens;
         }
 
         /*
@@ -234,8 +233,6 @@ if (!defined('__CSRF_PROTECTOR__')) {
 
                     //action in case of failed validation
                     self::failedValidationAction();
-                } else {
-                    self::refreshToken();    //refresh token for successful validation
                 }
             } else if (!static::isURLallowed()) {
                 //currently for same origin only
@@ -246,8 +243,6 @@ if (!defined('__CSRF_PROTECTOR__')) {
 
                     //action in case of failed validation
                     self::failedValidationAction();
-                } else {
-                    self::refreshToken();    //refresh token for successful validation
                 }
             }    
         }
@@ -331,6 +326,9 @@ if (!defined('__CSRF_PROTECTOR__')) {
             //#todo: ask mentors if $failedAuthAction is better as an int or string
             //default case is case 0
             switch (self::$config['failedAuthAction'][self::$requestType]) {
+                case csrfpAction::LogOnlyAction:
+                    //Do nothing, already logged above.
+                    break;
                 case csrfpAction::ForbiddenResponseAction:
                     //send 403 header
                     header('HTTP/1.0 403 Forbidden');
@@ -447,65 +445,6 @@ if (!defined('__CSRF_PROTECTOR__')) {
                 }
             }
             return substr($token, 0, self::$config['tokenLength']);
-        }
-
-        /*
-         * Function: ob_handler
-         * Rewrites <form> on the fly to add CSRF tokens to them. This can also
-         * inject our JavaScript library.
-         *
-         * Parameters: 
-         * $buffer - output buffer to which all output are stored
-         * $flag - INT
-         *
-         * Return:
-         * string, complete output buffer
-         */
-        public static function ob_handler($buffer, $flags)
-        {
-            // Even though the user told us to rewrite, we should do a quick heuristic
-            // to check if the page is *actually* HTML. We don't begin rewriting until
-            // we hit the first <html tag.
-            if (!self::$isValidHTML) {
-                // not HTML until proven otherwise
-                if (stripos($buffer, '<html') !== false) {
-                    self::$isValidHTML = true;
-                } else {
-                    return $buffer;
-                }
-            }
-
-            // TODO: statically rewrite all forms as well so that if a form is submitted
-            // before the js has worked on, it will still have token to send
-            // @priority: medium @labels: important @assign: mebjas
-            // @deadline: 1 week
-
-            //add a <noscript> message to outgoing HTML output,
-            //informing the user to enable js for CSRFProtector to work
-            //best section to add, after <body> tag
-            $buffer = preg_replace("/<body[^>]*>/", "$0 <noscript>" . self::$config['disabledJavascriptMessage'] .
-                "</noscript>", $buffer);
-
-            $hiddenInput = '<input type="hidden" id="' . CSRFP_FIELD_TOKEN_NAME.'" value="'
-                            .self::$config['CSRFP_TOKEN'] .'">' .PHP_EOL;
-
-            $hiddenInput .= '<input type="hidden" id="' .CSRFP_FIELD_URLS .'" value=\''
-                            .json_encode(self::$config['verifyGetFor']) .'\'>';
-
-            //implant hidden fields with check url information for reading in javascript
-            $buffer = str_ireplace('</body>', $hiddenInput . '</body>', $buffer);
-
-            if (self::$config['jsUrl']) {
-                //implant the CSRFGuard js file to outgoing script
-                $script = '<script type="text/javascript" src="' . self::$config['jsUrl'] . '"></script>';
-                $buffer = str_ireplace('</body>', $script . PHP_EOL . '</body>', $buffer, $count);
-
-                // Add the script to the end if the body tag was not closed
-                if (!$count)
-                    $buffer .= $script;
-            }
-
-            return $buffer;
         }
 
         /*
