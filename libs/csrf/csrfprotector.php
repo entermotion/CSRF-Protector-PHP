@@ -369,6 +369,29 @@ if (!defined('__CSRF_PROTECTOR__')) {
         }
 
         /*
+         * Function: hasToken
+         * Function to check if there already is a token stored at the section
+         *
+         * Parameters:
+         * void
+         *
+         * Returns:
+         * boolean
+         */
+        public static function hasToken()
+        {
+            if (
+                !isset($_SESSION[self::$config['CSRFP_TOKEN']]) ||
+                !is_array($_SESSION[self::$config['CSRFP_TOKEN']]) ||
+                count($_SESSION[self::$config['CSRFP_TOKEN']]) === 0
+            ) {
+                return false;
+            }
+            return true;
+        }
+
+
+        /*
          * Function: refreshToken
          * Function to set auth cookie
          *
