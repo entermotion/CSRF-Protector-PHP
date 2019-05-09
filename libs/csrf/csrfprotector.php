@@ -383,7 +383,9 @@ if (!defined('__CSRF_PROTECTOR__')) {
             if (
                 !isset($_SESSION[self::$config['CSRFP_TOKEN']]) ||
                 !is_array($_SESSION[self::$config['CSRFP_TOKEN']]) ||
-                count($_SESSION[self::$config['CSRFP_TOKEN']]) === 0
+                count($_SESSION[self::$config['CSRFP_TOKEN']]) === 0 ||
+                !isset($_COOKIE[self::$config['CSRFP_TOKEN']]) ||
+                empty($_COOKIE[self::$config['CSRFP_TOKEN']])
             ) {
                 return false;
             }
