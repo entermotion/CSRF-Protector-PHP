@@ -407,9 +407,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
         {
             $token = self::generateAuthToken();
 
-            if (!isset($_SESSION[self::$config['CSRFP_TOKEN']])
-                || !is_array($_SESSION[self::$config['CSRFP_TOKEN']]))
-                $_SESSION[self::$config['CSRFP_TOKEN']] = array();
+            $_SESSION[self::$config['CSRFP_TOKEN']] = array();
 
             // set token to session for server side validation
             array_push($_SESSION[self::$config['CSRFP_TOKEN']], $token);
@@ -422,7 +420,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
             }
 
             setcookie(
-                self::$config['CSRFP_TOKEN'], 
+                self::$config['CSRFP_TOKEN'],
                 $token,
                 time() + self::$cookieConfig->expire,
                 self::$cookieConfig->path,
