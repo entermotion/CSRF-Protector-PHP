@@ -198,6 +198,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
             $headerTokens = '<input type="hidden" id="' . CSRFP_FIELD_TOKEN_NAME.'" value="'.self::$config['CSRFP_TOKEN'] .'">' .PHP_EOL;
             $headerTokens .= '<input type="hidden" id="' .CSRFP_FIELD_URLS .'" value=\''.json_encode(self::$config['verifyGetFor']) .'\'>';
             $headerTokens .= '<noscript>'.self::$config['disabledJavascriptMessage'].'</noscript>';
+            $headerTokens .= '<script type="text/javascript">csrfprotector_init()</script>';
             return $headerTokens;
         }
 

@@ -352,11 +352,3 @@ function csrfprotector_init() {
 	}
 
 }
-
-/*
-* Changes this to use $j(document).ready instead of window.addEventListener("DOMContentLoaded
-* Because this was firing after some ajax calls which made those ajax calls fail.
-*/
-$j(document).ready(function () {
-    csrfprotector_init();
-});
