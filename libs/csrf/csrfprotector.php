@@ -80,7 +80,6 @@ if (!defined('__CSRF_PROTECTOR__')) {
          *                        of failed authentication
          * Property: #4: jsFile (string) => location of the CSRFProtector js file
          * Property: #5: tokenLength (int) => default length of hash
-         * Property: #6: disabledJavascriptMessage (string) => error message if client's js is disabled
          */
         public static $config = array();
 
@@ -213,7 +212,6 @@ if (!defined('__CSRF_PROTECTOR__')) {
             }
             $headerTokens = '<input type="hidden" id="' . CSRFP_FIELD_TOKEN_NAME.'" value="'.self::$config['CSRFP_TOKEN'] .'">' .PHP_EOL;
             $headerTokens .= '<input type="hidden" id="' .CSRFP_FIELD_URLS .'" value=\''.json_encode([]) .'\'>';
-            $headerTokens .= '<noscript>'.self::$config['disabledJavascriptMessage'].'</noscript>';
             $headerTokens .= '<script type="text/javascript">csrfprotector_init()</script>';
             return $headerTokens;
         }
