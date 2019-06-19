@@ -315,10 +315,12 @@ if (!defined('__CSRF_PROTECTOR__')) {
             return false;
         }
 
-        /*
+        /**
          * Function: failedValidationAction
          * function to be called in case of failed validation
          * performs logging and take appropriate action
+         *
+         * @throws \Exception $e
          *
          * Parameters:
          * void
@@ -339,6 +341,9 @@ if (!defined('__CSRF_PROTECTOR__')) {
             switch (self::$config['failedAuthAction'][self::$requestType]) {
                 case csrfpAction::LogOnlyAction:
                     //Do nothing, already logged above.
+                    break;
+                case csrfpAction::ThrowExceptionAction:
+                    throw new \Exception("CSRF Token Validation Failed");
                     break;
                 case csrfpAction::ForbiddenResponseAction:
                     //send 403 header

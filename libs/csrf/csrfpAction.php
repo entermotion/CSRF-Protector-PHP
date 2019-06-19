@@ -48,9 +48,16 @@ if (!defined('__CSRF_PROTECTOR_csrfpAction__')) {
 
         /**
          * Variable: LogOnlyAction
-         * Action of sending back 5XX response code
+         * Action of only logging the failure
          * @var int
          */
         const LogOnlyAction = 5;
+
+        /**
+         * Variable: ThrowExceptionAction
+         * Action of throwing an exception on failure
+         * @var int
+         */
+        const ThrowExceptionAction = 6;
     }
 }
