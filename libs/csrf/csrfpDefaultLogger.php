@@ -36,17 +36,15 @@ if (!defined('__CSRF_PROTECTOR_csrfpDefaultLogger_')) {
          */
         function __construct($path) {
             //// Check for relative path
-            $this->logDirectory = __DIR__ . "/../" . $path;
-            
+            $this->logDirectory = $path;
+
 
             //// If the relative log directory path does not
             //// exist try as an absolute path
             if (!is_dir($this->logDirectory)) {
-                $this->logDirectory = $path;
-            }
-
-            if (!is_dir($this->logDirectory)) {
-                throw new logDirectoryNotFoundException("OWASP CSRFProtector: Log Directory Not Found!");
+                if(!mkdir($this->logDirectory, 0775)){
+                    throw new logDirectoryNotFoundException("OWASP CSRFProtector: Log Directory Not Found And Couldn't be Created!");
+                }
             }
         }
 
