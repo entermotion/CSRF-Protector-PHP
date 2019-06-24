@@ -162,6 +162,10 @@ if (!defined('__CSRF_PROTECTOR__')) {
                 }
             }
 
+            if(isset(self::$config['active'])) {
+                self::$active = self::$config['active'];
+            }
+
             if (self::$config['CSRFP_TOKEN'] == '')
                 self::$config['CSRFP_TOKEN'] = CSRFP_TOKEN;
 
@@ -252,6 +256,8 @@ if (!defined('__CSRF_PROTECTOR__')) {
                     //action in case of failed validation
                     self::failedValidationAction();
                 }
+
+                self::unsetTokenFromRequest();
             }
         }
 
@@ -284,6 +290,23 @@ if (!defined('__CSRF_PROTECTOR__')) {
             }
 
             return false;
+        }
+
+        /*
+         * Function: unsetTokenFromRequest
+         * check if the token exists at the $_POST and if so, unset it.
+         *
+         * Parameters:
+         * void
+         *
+         * Returns:
+         * void
+         */
+        private static function unsetTokenFromRequest() {
+            // look for in $_POST, then header
+            if (isset($_POST[self::$config['CSRFP_TOKEN']])) {
+                unset($_POST[self::$config['CSRFP_TOKEN']]);
+            }
         }
 
         /*
