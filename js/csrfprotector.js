@@ -146,9 +146,9 @@ var CSRFP = {
      * @return void
      */
     _init: function() {
-        CSRFP.CSRFP_TOKEN = document.getElementById(CSRFP_FIELD_TOKEN_NAME).value;
+        CSRFP.CSRFP_TOKEN = document.querySelector('meta[name="' + CSRFP_FIELD_TOKEN_NAME + '"]').content;
         try {
-            CSRFP.checkForUrls = JSON.parse(document.getElementById(CSRFP_FIELD_URLS).value);
+            CSRFP.checkForUrls = JSON.parse(document.querySelector('meta[name="' + CSRFP_FIELD_URLS + '"]').content);
         } catch (err) {
             console.error(err);
             console.error('[ERROR] [CSRF Protector] unable to parse blacklisted url fields.');
@@ -191,7 +191,7 @@ function csrfprotector_init() {
     // TODO - check for method
     //==================================================================
     // run time binding
-    document.querySelector('body').addEventListener('submit', function(event) {
+    document.addEventListener('submit', function(event) {
         if (event.target.tagName.toLowerCase() === 'form') {
             var method = event.target.method;
             if(method && method.toLowerCase() === "post") {
@@ -323,7 +323,10 @@ function csrfprotector_init() {
     // Append the token to those url already containing GET query parameter(s)
     // Add the token to those which does not contain GET query parameter(s)
     //==================================================================
-
+    /*
+     * Warning: This will not work on the existing method because we are not waiting for the DOM to initalize.
+     * We are currently not using this method for any links.
+     */
     for (var i = 0; i < document.links.length; i++) {
         document.links[i].addEventListener("mousedown", function(event) {
             var href = event.target.href;
@@ -357,5 +360,5 @@ function csrfprotector_init() {
             }
         });
     }
-
 }
+csrfprotector_init();

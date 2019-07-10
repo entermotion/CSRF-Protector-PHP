@@ -210,14 +210,15 @@ if (!defined('__CSRF_PROTECTOR__')) {
          * Returns:
          * string
          */
-        public static function renderHeaderTokens(){
-            if(!self::$active) {
-                return null;
-            }
-            $headerTokens = '<input type="hidden" id="' . CSRFP_FIELD_TOKEN_NAME.'" value="'.self::$config['CSRFP_TOKEN'] .'">' .PHP_EOL;
-            $headerTokens .= '<input type="hidden" id="' .CSRFP_FIELD_URLS .'" value=\''.json_encode([]) .'\'>';
-            $headerTokens .= '<script type="text/javascript">csrfprotector_init()</script>';
-            return $headerTokens;
+        public static function renderHeaderTokens()
+        {
+          if (!self::$active) {
+            return null;
+          }
+
+          $headerTokens = '<meta name="' . CSRFP_FIELD_TOKEN_NAME . '" content="' . self::$config['CSRFP_TOKEN'] . '">' . PHP_EOL;
+          $headerTokens .= '<meta name="' . CSRFP_FIELD_URLS . '" content="' . json_encode([]) . '">' . PHP_EOL;
+          return $headerTokens;
         }
 
         /*
@@ -461,7 +462,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
             setcookie(
                 self::$config['CSRFP_TOKEN'],
                 $token,
-                time() + self::$cookieConfig->expire,
+                (self::$cookieConfig->expire !== -1) ? time() + self::$cookieConfig->expire : 0,
                 self::$cookieConfig->path,
                 self::$cookieConfig->domain,
                 (bool) self::$cookieConfig->secure);
