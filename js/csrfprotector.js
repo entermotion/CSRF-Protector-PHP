@@ -146,7 +146,12 @@ var CSRFP = {
      * @return void
      */
     _init: function() {
-        CSRFP.CSRFP_TOKEN = document.querySelector('meta[name="' + CSRFP_FIELD_TOKEN_NAME + '"]').content;
+        try
+        {
+            CSRFP.CSRFP_TOKEN = document.querySelector('meta[name="' + CSRFP_FIELD_TOKEN_NAME + '"]').content;
+        } catch (err) {
+            return false;
+        }
         try {
             CSRFP.checkForUrls = JSON.parse(document.querySelector('meta[name="' + CSRFP_FIELD_URLS + '"]').content);
         } catch (err) {
@@ -161,6 +166,7 @@ var CSRFP = {
             CSRFP.checkForUrls[i] = new RegExp(CSRFP.checkForUrls[i]);
         }
 
+        return true;
     }
 
 };
@@ -172,7 +178,11 @@ var CSRFP = {
 function csrfprotector_init() {
 
     // Call the init function
-    CSRFP._init();
+    var initialized = CSRFP._init();
+    // when the lib meta tags are not set
+    if (!initialized) {
+        return false;
+    }
 
     // definition of basic FORM submit event handler to intercept the form request
     // and attach a CSRFP TOKEN if it's not already available
