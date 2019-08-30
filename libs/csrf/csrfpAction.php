@@ -59,5 +59,12 @@ if (!defined('__CSRF_PROTECTOR_csrfpAction__')) {
          * @var int
          */
         const ThrowExceptionAction = 6;
+
+        /**
+         * Variable: TriggerErrorACtion
+         * Action of triggering_error on failure
+         * @var int
+         */
+        const TriggerErrorAction = 7;
     }
 }

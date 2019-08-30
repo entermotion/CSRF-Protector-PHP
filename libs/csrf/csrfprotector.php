@@ -367,6 +367,9 @@ if (!defined('__CSRF_PROTECTOR__')) {
       //#todo: ask mentors if $failedAuthAction is better as an int or string
       //default case is case 0
       switch (self::$config['failedAuthAction'][self::$requestType]) {
+        case csrfpAction::TriggerErrorAction:
+          trigger_error("CSRF Token Validation Failed");
+          break;
         case csrfpAction::LogOnlyAction:
           //Do nothing, already logged above.
           break;
