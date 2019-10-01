@@ -432,7 +432,8 @@ if (!defined('__CSRF_PROTECTOR__')) {
         !is_array($_SESSION[self::$config['CSRFP_TOKEN']]) ||
         count($_SESSION[self::$config['CSRFP_TOKEN']]) === 0 ||
         !isset($_COOKIE[self::$config['CSRFP_TOKEN']]) ||
-        empty($_COOKIE[self::$config['CSRFP_TOKEN']])
+        empty($_COOKIE[self::$config['CSRFP_TOKEN']]) ||
+        !in_array($_COOKIE[self::$config['CSRFP_TOKEN']], $_SESSION[self::$config['CSRFP_TOKEN']]) //Cookie and session went out of sync, that's the same as not having a token
       ) {
         return false;
       }
@@ -536,9 +537,10 @@ if (!defined('__CSRF_PROTECTOR__')) {
       $context = array();
       $context['HOST'] = $_SERVER['HTTP_HOST'];
       $context['REQUEST_URI'] = $_SERVER['REQUEST_URI'];
-      $context['requestType'] = self::$requestType;
-      $context['cookie'] = $_COOKIE;
-
+      $context['REQUEST_TYPE'] = self::$requestType;
+      $context['COOKIE'] = $_COOKIE;
+      $context['RECEIVED_TOKEN'] = self::getTokenFromRequest();
+      $context['SESSION'] = $_SESSION[self::$config['CSRFP_TOKEN']];
       self::$logger->log("OWASP CSRF PROTECTOR VALIDATION FAILURE", $context);
     }
 
