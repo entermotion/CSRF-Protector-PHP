@@ -540,7 +540,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
       $context['REQUEST_TYPE'] = self::$requestType;
       $context['COOKIE'] = $_COOKIE;
       $context['RECEIVED_TOKEN'] = self::getTokenFromRequest();
-      $context['SESSION'] = $_SESSION[self::$config['CSRFP_TOKEN']];
+      $context['SESSION'] = (isset($_SESSION[self::$config['CSRFP_TOKEN']])) ? $_SESSION[self::$config['CSRFP_TOKEN']] : null;
       self::$logger->log("OWASP CSRF PROTECTOR VALIDATION FAILURE", $context);
     }
 
