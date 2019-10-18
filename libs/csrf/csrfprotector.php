@@ -257,7 +257,6 @@ if (!defined('__CSRF_PROTECTOR__')) {
         //currently for same origin only
         if (!($token && isset($_SESSION[self::$config['CSRFP_TOKEN']])
           && (self::isValidToken($token)))) {
-
           //action in case of failed validation
           self::failedValidationAction();
         }
@@ -474,6 +473,13 @@ if (!defined('__CSRF_PROTECTOR__')) {
         self::$cookieConfig->path,
         self::$cookieConfig->domain,
         (bool) self::$cookieConfig->secure);
+
+      /*
+       * We force this update here because otherwise the $_COOKIE global var would only get updated on the next request,
+       * so any subsequent call to \csrfProtector::hasToken() would fail because $_COOKIE[$key] would differ from $_SESSION[$key]
+       * this is specially likely to happen on the login and logout flows where the tokens are regenerated even if there was already a previous token.
+       */
+      $_COOKIE[self::$config['CSRFP_TOKEN']] = $token;
     }
 
     /*
