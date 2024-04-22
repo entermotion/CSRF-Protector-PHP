@@ -472,7 +472,9 @@ if (!defined('__CSRF_PROTECTOR__')) {
         (self::$cookieConfig->expire !== -1) ? time() + self::$cookieConfig->expire : 0,
         self::$cookieConfig->path,
         self::$cookieConfig->domain,
-        (bool) self::$cookieConfig->secure);
+        (bool) self::$cookieConfig->secure,
+        !empty(self::$cookieConfig->httpOnly)
+      );
 
       /*
        * We force this update here because otherwise the $_COOKIE global var would only get updated on the next request,

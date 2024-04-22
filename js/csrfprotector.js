@@ -42,13 +42,18 @@ var CSRFP = {
         return true;
     },
     /**
-     * Function to get Auth key from cookie and return it to requesting function
+     * Function to get Auth key from meta tag or cookie and return it to requesting function
      *
      * @param: void
      *
      * @return {string|Boolean} csrftoken retrieved from cookie
      */
     _getAuthKey: function() {
+        var metaTag = document.querySelector('meta[name="' + CSRFP.CSRFP_TOKEN + '"]');
+        if (metaTag) {
+            return metaTag.content;
+        }
+
         var re = new RegExp(CSRFP.CSRFP_TOKEN +"=([^;]+)(;|$)");
         var RegExpArray = re.exec(document.cookie);
 
