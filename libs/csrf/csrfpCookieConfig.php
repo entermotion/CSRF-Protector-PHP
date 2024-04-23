@@ -42,7 +42,7 @@ if (!defined('__CSRF_PROTECTOR_csrfpCookieConfig__')) {
 
         /**
          * Variable: $httpOnly
-         * if true need to use meta tag with CSRFP_TOKEN name to expose the cookie value to javascript
+         * if true, we'll use a meta tag with CSRFP_TOKEN name to expose the cookie value to javascript
          * @var bool
          */
         public $httpOnly = false;

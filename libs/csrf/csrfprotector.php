@@ -219,6 +219,9 @@ if (!defined('__CSRF_PROTECTOR__')) {
 
       $headerTokens = '<meta name="' . CSRFP_FIELD_TOKEN_NAME . '" content="' . self::$config['CSRFP_TOKEN'] . '">' . PHP_EOL;
       $headerTokens .= '<meta name="' . CSRFP_FIELD_URLS . '" content="' . urlencode(json_encode(self::$config['skipTokenForUrl'] ?? [])) . '">' . PHP_EOL;
+      if (!empty(self::$config['cookieConfig']['httpOnly'])) {
+          $headerTokens .= '<meta name="' . self::$config['CSRFP_TOKEN'] . '" content="' . ($_COOKIE[self::$config['CSRFP_TOKEN']] ?? '') . '">' . PHP_EOL;
+      }
       return $headerTokens;
     }
 
