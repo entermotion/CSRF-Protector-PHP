@@ -32,14 +32,14 @@ var CSRFP = {
      * @return {Boolean} 	true if csrftoken is not needed
      * 						false if csrftoken is needed
      */
-    _isValidGetRequest: function(url) {
+    _canBypassCsrfToken: function(url) {
         for (var i = 0; i < CSRFP.checkForUrls.length; i++) {
             var match = CSRFP.checkForUrls[i].exec(url);
             if (match !== null && match.length > 0) {
-                return false;
+                return true;
             }
         }
-        return true;
+        return false;
     },
     /**
      * Function to get Auth key from meta tag or cookie and return it to requesting function
@@ -130,7 +130,7 @@ var CSRFP = {
                 // Remove CSRf token if exists
                 if (typeof obj[CSRFP.CSRFP_TOKEN] !== 'undefined') {
                     var target = obj[CSRFP.CSRFP_TOKEN];
-                    target.parentNode.removeChild(target);
+                    target.parentNode?.removeChild(target);
                 }
 
                 // Trigger the functions
@@ -157,8 +157,9 @@ var CSRFP = {
         } catch (err) {
             return false;
         }
+
         try {
-            CSRFP.checkForUrls = JSON.parse(document.querySelector('meta[name="' + CSRFP_FIELD_URLS + '"]').content);
+            CSRFP.checkForUrls = JSON.parse(decodeURIComponent(document.querySelector('meta[name="' + CSRFP_FIELD_URLS + '"]').content));
         } catch (err) {
             console.error(err);
             console.error('[ERROR] [CSRF Protector] unable to parse blacklisted url fields.');
@@ -243,7 +244,11 @@ function csrfprotector_init() {
      */
     HTMLFormElement.prototype.addEventListener_ = HTMLFormElement.prototype.addEventListener;
     HTMLFormElement.prototype.addEventListener = function(eventType, fun, bubble) {
-        if (eventType === 'submit') {
+        /**
+         * If fun is an object, it most likely means it's part of the submit-button webcomponent
+         * @see SubmitButton
+         */
+        if (eventType === 'submit' && typeof fun !== 'object') {
             var wrapped = CSRFP._csrfpWrap(fun, this);
             this.addEventListener_(eventType, wrapped, bubble);
         } else {
@@ -288,8 +293,15 @@ function csrfprotector_init() {
                 + location.pathname;
             url = CSRFP._getAbsolutePath(base, url);
         }
-        if (method.toLowerCase() === 'get'
-            && !CSRFP._isValidGetRequest(url)) {
+        if (method.toLowerCase() === 'get') {
+            /**
+             * Don't set any tokens, since we are getting an external website which is out of our control
+             */
+            if (CSRFP._canBypassCsrfToken(url))
+            {
+                return this.old_open(method, url, async, username, password);
+            }
+
             //modify the url
             if (url.indexOf('?') === -1) {
                 url += "?" +CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey();
@@ -297,7 +309,7 @@ function csrfprotector_init() {
                 url += "&" +CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey();
             }
         }
-
+        XMLHttpRequest.prototype.requestURL = url
         return this.old_open(method, url, async, username, password);
     }
 
@@ -311,7 +323,14 @@ function csrfprotector_init() {
      */
     function new_send(data) {
         if (this.method.toLowerCase() === 'post') {
-            // attach the token in request header
+            /**
+             * Don't set any tokens, since we are posting to an external website which is out of our control
+             */
+            if (CSRFP._canBypassCsrfToken(XMLHttpRequest.prototype.requestURL))
+            {
+                return this.old_send(data)
+            }
+
             this.setRequestHeader(CSRFP.CSRFP_TOKEN, CSRFP._getAuthKey());
         }
         return this.old_send(data);
@@ -351,8 +370,8 @@ function csrfprotector_init() {
                 var url = urlParts[0];
                 var hash = urlParts[1];
 
-                if(CSRFP._getDomain(url).indexOf(document.domain) === -1
-                    || CSRFP._isValidGetRequest(url)) {
+                if (CSRFP._getDomain(url).indexOf(document.domain) === -1)
+                {
                     //cross origin or not to be protected by rules -- ignore
                     return;
                 }
