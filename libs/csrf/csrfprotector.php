@@ -243,9 +243,14 @@ if (!defined('__CSRF_PROTECTOR__')) {
       if(!self::$active) {
         return null;
       }
+
       //#todo this method is valid for same origin request only,
       //enable it for cross origin also sometime
       //for cross origin the functionality is different
+
+      //Added by @alexlazar: won't work for CORS requests because we can't verify the token value when sent as a custom
+      //header, we can only verify its existence (token value gets stale in front-end causing mismatch)
+      //see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#employing-custom-request-headers-for-ajaxapi
       if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (self::skipVerificationFor()) {
           return null;
@@ -254,8 +259,16 @@ if (!defined('__CSRF_PROTECTOR__')) {
         //set request type to POST
         self::$requestType = "POST";
 
-        // look for token in payload else from header
-        $token = self::getTokenFromRequest();
+        // look for token in header and payload
+        $tokenAndSource = self::getTokenFromRequest();
+        $token = !empty($tokenAndSource['token']) ? $tokenAndSource['token'] : null;
+        $source = !empty($tokenAndSource['source']) ? $tokenAndSource['source'] : null;
+
+        // if the token is part of the header, its existence is enough
+        if ($source == 'apache_request_headers' && $token) {
+            self::unsetTokenFromRequest();
+            return null;
+        }
 
         //currently for same origin only
         if (!($token && isset($_SESSION[self::$config['CSRFP_TOKEN']])
@@ -270,30 +283,33 @@ if (!defined('__CSRF_PROTECTOR__')) {
 
     /*
      * Function: getTokenFromRequest
-     * function to get token in case of POST request
+     * function to get token and token source in case of POST request
      *
      * Parameters:
      * void
      *
      * Returns:
-     * any (string / bool) - token retrieved from header or form payload
+     * array|bool - an array of [token, source] or false
      */
     private static function getTokenFromRequest() {
-      // look for in $_POST, then header
-      if (isset($_POST[self::$config['CSRFP_TOKEN']])) {
-        return $_POST[self::$config['CSRFP_TOKEN']];
-      }
-
+      // look for token in header
       if (function_exists('apache_request_headers')) {
-        $apacheRequestHeaders = apache_request_headers();
-        if (isset($apacheRequestHeaders[self::$config['CSRFP_TOKEN']])) {
-          return $apacheRequestHeaders[self::$config['CSRFP_TOKEN']];
-        }
+          $apacheRequestHeaders = apache_request_headers();
+          if (isset($apacheRequestHeaders[self::$config['CSRFP_TOKEN']])) {
+              return ['token' => $apacheRequestHeaders[self::$config['CSRFP_TOKEN']], 'source' => 'apache_request_headers'];
+          }
       }
 
-      if (self::$tokenHeaderKey === null) return false;
+      // look for token in $_POST
+      if (isset($_POST[self::$config['CSRFP_TOKEN']])) {
+        return ['token' => $_POST[self::$config['CSRFP_TOKEN']], 'source' => '$_POST'];
+      }
+
+      if (self::$tokenHeaderKey === null)
+          return false;
+
       if (isset($_SERVER[self::$tokenHeaderKey])) {
-        return $_SERVER[self::$tokenHeaderKey];
+        return ['token' => $_SERVER[self::$tokenHeaderKey], 'source' => '$_SERVER'];
       }
 
       return false;
@@ -544,14 +560,18 @@ if (!defined('__CSRF_PROTECTOR__')) {
      */
     protected static function logCSRFattack()
     {
+      $tokenAndSource = self::getTokenFromRequest()['token'];
+
       //miniature version of the log
       $context = array();
       $context['HOST'] = $_SERVER['HTTP_HOST'];
       $context['REQUEST_URI'] = $_SERVER['REQUEST_URI'];
       $context['REQUEST_TYPE'] = self::$requestType;
       $context['COOKIE'] = $_COOKIE;
-      $context['RECEIVED_TOKEN'] = self::getTokenFromRequest();
+      $context['RECEIVED_TOKEN'] = isset($tokenAndSource['token']) ? $tokenAndSource['token'] : null;
+      $context['RECEIVED_TOKEN_SOURCE'] = isset($tokenAndSource['source']) ? $tokenAndSource['source'] : null;
       $context['SESSION'] = (isset($_SESSION[self::$config['CSRFP_TOKEN']])) ? $_SESSION[self::$config['CSRFP_TOKEN']] : null;
+
       self::$logger->log("OWASP CSRF PROTECTOR VALIDATION FAILURE", $context);
     }
 
