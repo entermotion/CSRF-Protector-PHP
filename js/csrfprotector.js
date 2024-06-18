@@ -301,13 +301,6 @@ function csrfprotector_init() {
             {
                 return this.old_open(method, url, async, username, password);
             }
-
-            //modify the url
-            if (url.indexOf('?') === -1) {
-                url += "?" +CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey();
-            } else {
-                url += "&" +CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey();
-            }
         }
         XMLHttpRequest.prototype.requestURL = url
         return this.old_open(method, url, async, username, password);
